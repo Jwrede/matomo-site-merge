@@ -47,8 +47,8 @@ def token():
                           capture_output=True, text=True, check=True).stdout.split('"')[1]
     tok = secrets.token_hex(16)
     sql("INSERT INTO matomo_user_token_auth (login, description, password, hash_algo, "
-        "system_token, date_created, secure_only) VALUES ('admin', 'e2e', %s, 'sha512', 0, "
-        "NOW(), 0)", (hashlib.sha512((tok + salt).encode()).hexdigest(),))
+        "system_token, date_created) VALUES ('admin', 'e2e', %s, 'sha512', 0, NOW())",
+        (hashlib.sha512((tok + salt).encode()).hexdigest(),))  # secure_only defaults to 0 (Matomo 5)
     return tok
 
 
