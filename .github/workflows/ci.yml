@@ -1,0 +1,53 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "37 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.10", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install . pytest
+      - run: pytest -q tests --ignore=tests/e2e
+
+  e2e:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - matomo: matomo:5-fpm-alpine
+            db: mariadb:11.4
+          - matomo: matomo:5-fpm-alpine
+            db: mysql:8.4
+          - matomo: matomo:4-fpm-alpine
+            db: mariadb:10.11
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install . pytest
+      - name: Start Matomo
+        env:
+          MATOMO_IMAGE: ${{ matrix.matomo }}
+          DB_IMAGE: ${{ matrix.db }}
+        run: timeout 600 e2e/up.sh
+      - name: End-to-end tests
+        env:
+          MSM_E2E: "1"
+        run: timeout 1800 pytest -v tests/e2e
+      - name: Matomo log on failure
+        if: failure()
+        run: docker logs msm-matomo 2>&1 | tail -100
