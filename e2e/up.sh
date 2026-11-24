@@ -2,11 +2,12 @@
 # Starts MariaDB and Matomo (PHP built-in server) in Docker and installs Matomo.
 #   MATOMO_IMAGE (default matomo:5-fpm-alpine), DB_IMAGE (default mariadb:11.4)
 # Leaves: Matomo on http://127.0.0.1:18080, DB on 127.0.0.1:13306 (matomo/matomo, db matomo)
+# Reset: docker rm -f -v msm-db msm-matomo (-v drops the anonymous /var/www/html volume)
 set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 MATOMO_IMAGE=${MATOMO_IMAGE:-matomo:5-fpm-alpine}
 DB_IMAGE=${DB_IMAGE:-mariadb:11.4}
-docker rm -f msm-db msm-matomo >/dev/null 2>&1 || true
+docker rm -f -v msm-db msm-matomo >/dev/null 2>&1 || true
 # Host network: no extra Docker network needed (some hosts have no free address pool).
 docker run -d --name msm-db --network host --tmpfs /var/lib/mysql \
   -e MARIADB_ROOT_PASSWORD=root -e MARIADB_DATABASE=matomo -e MARIADB_USER=matomo \
